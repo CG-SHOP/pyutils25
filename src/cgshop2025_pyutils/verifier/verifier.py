@@ -19,10 +19,9 @@ class VerificationResult(BaseModel):
 
 
 def verify(
-    instance: Cgshop2025Instance, solution: Cgshop2025Solution
+    instance: Cgshop2025Instance, solution: Cgshop2025Solution, strict: bool = False
 ) -> VerificationResult:
     geom_helper = VerificationGeometryHelper()
-
     # Combine instance and solution points into one loop to simplify the logic
     all_points = [Point(x, y) for x, y in zip(instance.points_x, instance.points_y)]
     all_points.extend(
@@ -62,6 +61,19 @@ def verify(
     for point in all_points:
         geom_helper.add_point(point)
 
+    # Add boundary segments to the geometry helper
+    for i, j in zip(instance.region_boundary[:-1], instance.region_boundary[1:]):
+        geom_helper.add_segment(i, j)
+    if len(instance.region_boundary) > 2:
+        geom_helper.add_segment(
+            instance.region_boundary[-1], instance.region_boundary[0]
+        )
+
+    # Add constraint segments to the geometry helper
+    for constraint in instance.additional_constraints:
+        geom_helper.add_segment(constraint[0], constraint[1])
+        assert len(constraint) == 2
+
     # Add segments to the geometry helper
     for edge in solution.edges:
         geom_helper.add_segment(edge[0], edge[1])
@@ -89,6 +101,14 @@ def verify(
     if isolated_points:
         errors.append(f"Isolated points found at {[str(p) for p in isolated_points]}")
 
+    # Check the number of steiner points for correctness
+    num_steiner_points = geom_helper.get_num_points() - len(instance.points_x)
+    if num_steiner_points != len(solution.steiner_points_x) and strict:
+        # We can repair the solution and just adapt the number of Steiner points
+        errors.append(
+            f"Expected {num_steiner_points} Steiner points, but found {len(solution.steiner_points_x)}"
+        )
+
     # If any errors were detected, return a result with those errors
     if errors:
         return VerificationResult(
@@ -98,6 +118,6 @@ def verify(
     # No errors, return the results of obtuse triangles and steiner points
     return VerificationResult(
         num_obtuse_triangles=geom_helper.count_obtuse_triangles(),
-        num_steiner_points=geom_helper.get_num_points() - len(instance.points_x),
+        num_steiner_points=num_steiner_points,
         errors=[],
     )

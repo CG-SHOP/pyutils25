@@ -217,6 +217,9 @@ try to fix them as soon as possible.
 
 ## Changelog
 
+- `0.0.10`: Fixed adding the instances segments to the verification geometry
+  helper. This was a serious issue that could lead to accepting invalid
+  solutions.
 - `0.0.9`: Better bounds checking for segment endpoint indices in `verify`
 - `0.0.8`: Adding file information to exceptions of `ZipSolutionIterator`
 - `0.0.7`: Fix for only accepting `.solution.json` (there was a `,` missing)
