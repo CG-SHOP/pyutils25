@@ -217,9 +217,12 @@ try to fix them as soon as possible.
 
 ## Changelog
 
+- `0.0.9`: Better bounds checking for segment endpoint indices in `verify`
 - `0.0.8`: Adding file information to exceptions of `ZipSolutionIterator`
 - `0.0.7`: Fix for only accepting `.solution.json` (there was a `,` missing)
 - `0.0.6`: Fix for CGAL 6
-- `0.0.5`: Improved error messages for isolated points. Only accepting `.solution.json` as solution file extension.
+- `0.0.5`: Improved error messages for isolated points. Only accepting
+  `.solution.json` as solution file extension.
 - `0.0.4`: Fixed bug with negative numbers in FieldNumber with string input
-- `0.0.3`: Allows negative Steiner points and snsure coordinates are converted to FieldNumber before Point construction
+- `0.0.3`: Allows negative Steiner points and ensure coordinates are converted
+  to FieldNumber before Point construction

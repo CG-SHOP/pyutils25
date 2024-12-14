@@ -24,6 +24,9 @@
 #include <fmt/core.h>
 #include <unordered_map>
 
+// for duplicate check
+#include <map>
+
 // Define CGAL types for easy readability and maintenance
 using Kernel = CGAL::Epeck; // Exact Predicates Exact Constructions Kernel
 using Point = CGAL::Point_2<Kernel>;
@@ -283,7 +286,7 @@ Kernel::FT str_to_exact(std::string number) {
     number += '0';
   if (number[0] == '-') {
     return -str_to_exact(number.substr(1));
-  } 
+  }
   if (std::count(number.begin(), number.end(), '/') == 1) { // rational numbers
     auto point_pos = number.find('/');
     auto numerator = str_to_exact(number.substr(0, point_pos));
@@ -303,6 +306,20 @@ Kernel::FT str_to_exact(std::string number) {
 std::string point_to_string(const Point &p) {
   return fmt::format("({}, {})", CGAL::to_double(p.x()),
                      CGAL::to_double(p.y()));
+}
+
+std::optional<std::pair<int, int>>
+points_contain_duplicates(const std::vector<Point> &points) {
+  std::map<Point, std::size_t> unique_points;
+  std::size_t index = 0;
+  for (const auto &p : points) {
+    auto result = unique_points.try_emplace(p, index);
+    if (!result.second) {
+      return std::pair<int, int>{int(result.first->second), int(index)};
+    }
+    ++index;
+  }
+  return std::nullopt;
 }
 
 // Pybind11 module definitions
@@ -473,4 +490,8 @@ PYBIND11_MODULE(_bindings, m) {
       .def("get_triangulation_edges",
            &ConstrainedTriangulation::get_triangulation_edges)
       .def("add_boundary", &ConstrainedTriangulation::add_boundary);
+
+  // Duplicate check
+  m.def("points_contain_duplicates", &points_contain_duplicates,
+        "Check if a list of points contains duplicates.");
 }

@@ -65,6 +65,9 @@ Computes the convex hull of a set of points.
 Finds the intersection point of two segments, if they intersect.
 
 - `intersection_point(seg1: Segment, seg2: Segment) -> Optional[Point]`: Returns the intersection point or `None`.
+
+#### `points_contain_duplicates`
+Check the list of exact points for duplicate points.
 """
 
 from ._bindings import (
@@ -76,6 +79,7 @@ from ._bindings import (
     VerificationGeometryHelper,
     compute_convex_hull,
     intersection_point,
+    points_contain_duplicates,
     squared_distance,
 )
 
@@ -89,4 +93,5 @@ __all__ = [
     "VerificationGeometryHelper",
     "ConstrainedTriangulation",
     "intersection_point",
+    "points_contain_duplicates",
 ]

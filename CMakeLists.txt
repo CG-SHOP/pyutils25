@@ -3,11 +3,10 @@
 # be used just to build a C++-library.
 cmake_minimum_required(VERSION 3.23)
 option(CXX "enable C++ compilation" ON)
-
+project(pyutils25)
 if(CXX)
   enable_language(CXX)
 endif()
-project(pyutils24 CXX)
 set(CMAKE_CXX_STANDARD 17) # Using C++-17 (most features with good support at
                            # 2022)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # The code needs to be compiled as PIC

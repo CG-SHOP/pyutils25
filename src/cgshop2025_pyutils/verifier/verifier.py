@@ -4,7 +4,12 @@ from pydantic import BaseModel
 
 from cgshop2025_pyutils.data_schemas.instance import Cgshop2025Instance
 from cgshop2025_pyutils.data_schemas.solution import Cgshop2025Solution
-from cgshop2025_pyutils.geometry import Point, VerificationGeometryHelper, FieldNumber
+from cgshop2025_pyutils.geometry import (
+    FieldNumber,
+    Point,
+    VerificationGeometryHelper,
+    points_contain_duplicates,
+)
 
 
 class VerificationResult(BaseModel):
@@ -24,6 +29,34 @@ def verify(
         Point(FieldNumber(x), FieldNumber(y))
         for x, y in zip(solution.steiner_points_x, solution.steiner_points_y)
     )
+
+    # check for duplicate points; if found, we cannot properly interpret the indices.
+    duplicates = points_contain_duplicates(all_points)
+    if duplicates:
+        p1, p2 = duplicates
+        return VerificationResult(
+            num_obtuse_triangles=-1,
+            num_steiner_points=-1,
+            errors=[
+                f"Duplicate points found: Indices {p1} and {p2} are the same point ({all_points[p1]})"
+            ],
+        )
+
+    # check for out-of-bounds point indices in edges
+    for index, edge in enumerate(solution.edges):
+        if (
+            edge[0] < 0
+            or edge[0] >= len(all_points)
+            or edge[1] < 0
+            or edge[1] >= len(all_points)
+        ):
+            return VerificationResult(
+                num_obtuse_triangles=-1,
+                num_steiner_points=-1,
+                errors=[
+                    f"Edge {index} ({edge}) contains out-of-bounds point indices (total number of points: {len(all_points)})"
+                ],
+            )
 
     # Add points to the geometry helper
     for point in all_points:
