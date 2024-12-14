@@ -19,10 +19,9 @@ class VerificationResult(BaseModel):
 
 
 def verify(
-    instance: Cgshop2025Instance, solution: Cgshop2025Solution
+    instance: Cgshop2025Instance, solution: Cgshop2025Solution, strict: bool = False
 ) -> VerificationResult:
     geom_helper = VerificationGeometryHelper()
-    print("NEW CODE!")
     # Combine instance and solution points into one loop to simplify the logic
     all_points = [Point(x, y) for x, y in zip(instance.points_x, instance.points_y)]
     all_points.extend(
@@ -104,7 +103,8 @@ def verify(
 
     # Check the number of steiner points for correctness
     num_steiner_points = geom_helper.get_num_points() - len(instance.points_x)
-    if num_steiner_points != len(solution.steiner_points_x):
+    if num_steiner_points != len(solution.steiner_points_x) and strict:
+        # We can repair the solution and just adapt the number of Steiner points
         errors.append(
             f"Expected {num_steiner_points} Steiner points, but found {len(solution.steiner_points_x)}"
         )
