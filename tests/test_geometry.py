@@ -1,3 +1,5 @@
+import pytest
+
 from cgshop2025_pyutils.geometry import (
     ConstrainedTriangulation,
     FieldNumber,
@@ -16,11 +18,28 @@ def test_number():
     assert FieldNumber(FieldNumber(1 / 2).exact()) == FieldNumber(1) / FieldNumber(2)
     assert FieldNumber(1 / 2).exact() == "1/2"
     assert FieldNumber("-1/2") == FieldNumber(-1) / FieldNumber(2)
+    assert FieldNumber(" - 1 / 2  ") == FieldNumber(-1) / FieldNumber(2)
     assert FieldNumber("-1").exact() == "-1"
+    assert FieldNumber("0000/1") == FieldNumber(0)
     long_num = "1" + 10_000_000 * "0"
     long_den = "2" + 10_000_000 * "0"
     long_str = long_num + " / " + long_den
     assert FieldNumber("1/2") == FieldNumber(long_str)
+
+
+def test_invalid_numbers():
+    with pytest.raises(RuntimeError):
+        FieldNumber("1/00000")
+    with pytest.raises(RuntimeError):
+        FieldNumber("--0")
+    with pytest.raises(RuntimeError):
+        FieldNumber("1/--1")
+    with pytest.raises(RuntimeError):
+        FieldNumber("123 lala")
+    with pytest.raises(RuntimeError):
+        FieldNumber("123 🤷")
+    with pytest.raises(RuntimeError):
+        FieldNumber("0/0")
 
 
 # Test the basic functionality of Point class
@@ -35,10 +54,12 @@ def test_point_creation():
     assert str(p2) == "(1, 1)"
     assert p1 != p2
 
+
 def test_negative_strings():
     for i in range(100):
         _number = FieldNumber(f"-{10**i}")
-        assert _number == FieldNumber(-1)*FieldNumber(f"{10**i}")
+        assert _number == FieldNumber(-1) * FieldNumber(f"{10**i}")
+
 
 def test_point_operations():
     p = Point(1, 1)
