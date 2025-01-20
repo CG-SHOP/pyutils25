@@ -9,7 +9,9 @@
 #include <CGAL/Arrangement_2.h>
 #include <CGAL/Boolean_set_operations_2.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
+#include <CGAL/Exact_integer.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Exact_rational.h>
 #include <CGAL/Point_2.h>
 #include <CGAL/Polygon_2.h>
 #include <CGAL/Polygon_with_holes_2.h>
@@ -279,28 +281,95 @@ std::optional<Point> intersection_point(const Segment2 &s1,
   return std::nullopt;
 }
 
-// Convert string to exact number (Kernel::FT), handling rational numbers
-Kernel::FT str_to_exact(std::string number) {
-  number.erase(0, number.find_first_not_of('0'));
+template <typename ER = CGAL::Exact_rational, typename EI = CGAL::Exact_integer>
+static CGAL::Exact_rational integer_str_to_exact(const std::string &str) {
+  if constexpr (std::is_constructible_v<ER, const std::string &>) {
+    return CGAL::Exact_rational(str);
+  } else if (std::is_constructible_v<ER, const char *>) {
+    return CGAL::Exact_rational(str.c_str());
+  } else if (std::is_constructible_v<EI, const std::string &> &&
+             std::is_constructible_v<ER, EI>) {
+    return CGAL::Exact_rational(CGAL::Exact_integer(str));
+  } else if (std::is_constructible_v<EI, const char *> &&
+             std::is_constructible_v<ER, EI>) {
+    return CGAL::Exact_rational(CGAL::Exact_integer(str.c_str()));
+  } else {
+    // fallback to I/O operators
+    std::istringstream input(str);
+    CGAL::Exact_rational exact(0);
+    input >> exact;
+    return exact;
+  }
+}
+
+static void remove_whitespace(std::string &number) {
+  // restricted whitespace detection;
+  // cannot use std::isspace (negative chars cause UB)
+  auto is_ws = [](char c) -> bool {
+    return c == ' ' || c == '\t' || c == '\n';
+  };
+  number.erase(std::remove_if(number.begin(), number.end(), is_ws),
+               number.end());
+}
+
+static void check_allowed(const std::string &number) {
+  auto is_allowed = [](char c) -> bool {
+    if (c < 0)
+      return false;
+    return std::isdigit(c) || c == '/' || c == '-';
+  };
+  if (!std::all_of(number.begin(), number.end(), is_allowed)) {
+    throw std::runtime_error("Invalid character in number string; only "
+                             "integers and string ratios are allowed.");
+  }
+}
+
+static void check_sign(const std::string &number) {
   if (number.empty())
-    number += '0';
-  if (number[0] == '-') {
-    return -str_to_exact(number.substr(1));
+    return;
+  if (!std::all_of(number.begin() + 1, number.end(),
+                   [](char c) { return std::isdigit(c); })) {
+    throw std::runtime_error(
+        "Negative sign character '-' in invalid position in number string.");
   }
-  if (std::count(number.begin(), number.end(), '/') == 1) { // rational numbers
-    auto point_pos = number.find('/');
-    auto numerator = str_to_exact(number.substr(0, point_pos));
-    auto denominator = str_to_exact(number.substr(point_pos + 1));
-    return numerator / denominator;
-  }
-  constexpr size_t max_len = 14;
+}
+
+static Kernel::FT checked_int_str_to_exact(std::string number) {
+  check_sign(number);
+  constexpr size_t max_len = 16;
   if (number.length() <= max_len) {
+    if (number.empty())
+      return 0;
     return to_exact(std::int64_t(std::stoll(number)));
   }
-  auto small_part = str_to_exact(number.substr(number.length() - max_len));
-  auto large_part = std::pow(10, max_len) *
-                    str_to_exact(number.substr(0, number.length() - max_len));
-  return large_part + small_part;
+  return Kernel::FT(integer_str_to_exact(number));
+}
+
+// Convert string to exact number (Kernel::FT), handling rational numbers
+Kernel::FT str_to_exact(std::string number) {
+  // remove whitespaces, leading plus signs, and leading zeros
+  remove_whitespace(number);
+  number.erase(0, number.find_first_not_of('+'));
+  number.erase(0, number.find_first_not_of('0'));
+  if (number.empty()) {
+    return 0;
+  }
+  check_allowed(number);
+  std::size_t slash_pos = number.find('/');
+  if (slash_pos != std::string::npos) {
+    if (number.find('/', slash_pos + 1) != std::string::npos) {
+      throw std::runtime_error("More than one / in number string!");
+    }
+    // rational
+    auto numerator = checked_int_str_to_exact(number.substr(0, slash_pos));
+    auto denominator = checked_int_str_to_exact(number.substr(slash_pos + 1));
+    if (denominator == 0) {
+      throw std::runtime_error("Divide by 0 in number string!");
+    }
+    return numerator / denominator;
+  }
+  // (possibly signed) integer
+  return checked_int_str_to_exact(std::move(number));
 }
 
 std::string point_to_string(const Point &p) {
