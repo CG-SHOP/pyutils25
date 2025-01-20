@@ -217,6 +217,7 @@ try to fix them as soon as possible.
 
 ## Changelog
 
+- `0.0.11`: Changed string-to-rational conversion to scale up to larger numbers.
 - `0.0.10`: Fixed adding the instances segments to the verification geometry
   helper. This was a serious issue that could lead to accepting invalid
   solutions.

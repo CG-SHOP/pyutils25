@@ -15,7 +15,7 @@ def readme():
 
 setup(  # https://scikit-build.readthedocs.io/en/latest/usage.html#setup-options
     name="cgshop2025_pyutils",
-    version="0.0.10",
+    version="0.0.11",
     author="Dominik Krupke",
     license="LICENSE",
     description="Utilities for verifying solutions of the CG:SHOP 2025 Competition.",
