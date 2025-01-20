@@ -17,6 +17,10 @@ def test_number():
     assert FieldNumber(1 / 2).exact() == "1/2"
     assert FieldNumber("-1/2") == FieldNumber(-1) / FieldNumber(2)
     assert FieldNumber("-1").exact() == "-1"
+    long_num = "1" + 10_000_000 * "0"
+    long_den = "2" + 10_000_000 * "0"
+    long_str = long_num + " / " + long_den
+    assert FieldNumber("1/2") == FieldNumber(long_str)
 
 
 # Test the basic functionality of Point class
